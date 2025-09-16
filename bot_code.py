@@ -136,8 +136,13 @@ def allowed_only(func):
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "Ahoj!"
-        "Můžeš používat tyto příkazy:\n/add <text> pro přidání\n/listmy pro zobrazení tvých záznamů\n/list pro zobrazení všech záznamů\n/remove <id> pro smazání"
-        "Pošli /id pokud chceš zjistit své chat_id (užitečné, pokud nemáš přístup a brání se to tady)"
+        "Můžeš používat tyto příkazy:\n"
+        "/add <text> pro přidání\n"
+        "/listmy pro zobrazení tvých záznamů\n"
+        "/list pro zobrazení všech záznamů\n"
+        "/remove <id> pro smazání\n"
+        "/id na zjištění svého chat_id\n\n"
+        "jiný text bude vyhodnocen jako připomínka a přidá se"
     )
 
 # /id - vypíše chat_id
@@ -227,7 +232,7 @@ def main():
     app.add_handler(CommandHandler("remove", remove_cmd))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_message))
 
-    print("Bot spuštěn, čekám na zprávy...")
+    print("MaliníkBot spuštěn, čeká na zprávy...")
     app.run_polling()
 
 if __name__ == "__main__":
