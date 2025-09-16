@@ -208,10 +208,10 @@ async def post_init(application):
     await application.bot.set_my_commands([
         BotCommand("start", "Úvod a nápověda"),
         BotCommand("id", "Zobrazí tvé chat_id"),
-        BotCommand("add", "Přidat připomínku: /add text"),
+        BotCommand("add", "Přidat připomínku: /add <text>"),
         BotCommand("list", "Seznam všech připomínek"),
         BotCommand("listmy", "Seznam všech mnou přidaných připomínek"),
-        BotCommand("remove", "Smazat připomínku podle ID: /remove id"),
+        BotCommand("remove", "Smazat připomínku podle ID: /remove <id>"),
     ])
 
 def main():
