@@ -18,9 +18,10 @@ pip install python-telegram-bot[asyncio] aiosqlite
 ```
 - nainstaluje virtuální prostředí pro python, spustí ho a do něj stáhne potřebné knihovny
 ```
-chmod +x <cesta_k_souboru_bot_code.py>
+chmod +x <cesta k souboru bot_code.py>
 ```
 - nastaví hlavní soubor jako spustitelný
+- je třeba doplnit správnou cestu (tedy pokud jsem ve složce `malinik`, pak stačí jen `./bot_code.py`
 ### V Telegramu
 - otevřít chat s uživatelem @BotFather
 - příkazem `/newbot` vyrobit nového bota (BotFather vás provede procesem)
