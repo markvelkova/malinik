@@ -80,7 +80,7 @@ async def list_reminders_for(chat_id: int) -> List[dict]:
     async with aiosqlite.connect(DB_PATH) as db:
         cur = await db.execute(
             "SELECT id, text, created_at FROM reminders WHERE chat_id = ? ORDER BY id DESC",
-            (chat_id)
+            (chat_id,)
         )
         rows = await cur.fetchall()
     return [{"id": r[0], "text": r[1], "created_at": r[2]} for r in rows]
@@ -99,7 +99,7 @@ async def remove_reminder(rid: int) -> bool:
     async with aiosqlite.connect(DB_PATH) as db:
         cur = await db.execute(
             "DELETE FROM reminders WHERE id = ?",
-            (rid)
+            (rid,)
         )
         await db.commit()
         deleted = cur.rowcount
@@ -115,7 +115,7 @@ async def send_to_display_and_update():
             cur = await db.execute("SELECT id, text FROM reminders ORDER BY id DESC LIMIT 10")
             rows = await cur.fetchall()
             summary = "\n".join(f"{r[0]}: {r[1]}" for r in rows)
-    update_display(summary)
+    await display_code.update_display(summary)
 
 
 
@@ -203,9 +203,20 @@ async def text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # SPUŠTĚNÍ
 # -------------------------
-async def main():
-    await init_db()
-    app = ApplicationBuilder().token(TOKEN).build()
+
+async def post_init(application):
+    await application.bot.set_my_commands([
+        BotCommand("start", "Úvod a nápověda"),
+        BotCommand("id", "Zobrazí tvé chat_id"),
+        BotCommand("add", "Přidat připomínku: /add text"),
+        BotCommand("list", "Seznam všech připomínek"),
+        BotCommand("listmy", "Seznam všech mnou přidaných připomínek"),
+        BotCommand("remove", "Smazat připomínku podle ID: /remove id"),
+    ])
+
+def main():
+    asyncio.run(init_db())
+    app = ApplicationBuilder().token(TOKEN).post_init(post_init).build()
 
     # registrace příkazů
     app.add_handler(CommandHandler("start", start_cmd))
@@ -216,18 +227,8 @@ async def main():
     app.add_handler(CommandHandler("remove", remove_cmd))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_message))
 
-    commands = [
-        BotCommand("start", "Úvod a nápověda"),
-        BotCommand("id", "Zobrazí tvé chat_id"),
-        BotCommand("add", "Přidat připomínku: /add text"),
-        BotCommand("list", "Seznam všech připomínek"),
-        BotCommand("listmy", "Seznam všech mnou přidaných připomínek"),
-        BotCommand("remove", "Smazat připomínku podle ID: /remove id"),
-    ]
-    await app.bot.set_my_commands(commands)
-
     print("Bot spuštěn, čekám na zprávy...")
-    await app.run_polling()
+    app.run_polling()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
