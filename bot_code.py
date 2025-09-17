@@ -2,9 +2,14 @@
 import os
 import json
 import asyncio
+
 import display_code
+import config
+from db_utils import configure, init_db, add_reminder, list_reminders_for, list_all_reminders, remove_reminder
+
 from datetime import datetime
 from typing import List
+from datetime import datetime, timezone
 
 from telegram import Update, BotCommand
 from telegram.ext import (
@@ -17,109 +22,15 @@ from telegram.ext import (
 import aiosqlite 
 # asynchronni sqlite databaze
 
-
-# KONFIGURACE
-# -------------------------
-CONFIG_FILE = "config.json"
-
-def load_or_create_config():
-    # pokud existuje ve složce soubor názvu v proměnné CONFIG_FILE výše, pak se použije
-    if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, "r") as f:
-            return json.load(f)
-    else:
-        print("Vítej v Maliníku, je třeba vše nastavit, aby to fungovalo, jak bylo přislíbeno...\n Následující údaje můžete kdykoli upravit ručně v souboru config.json\n Pokud už jste tyto údaje někdy nastavovali a teď to nefunguje, zkontrolujte, zda soubor {CONFIG_FILE} existuje a je na správném místě")
-        db_path = input("Zadej cestu k databázi (např. databaze.db): ").strip()
-        token = input("Zadej Telegram bot token (získáš při tvorbě bota): ").strip()
-        chat_ids = input("Zadej povolená chat_id oddělené čárkou (získáš od bota zavoláním příkazu /id, je možno doplnit ručně později):\n").strip()
-        config = {
-            "db_path": db_path or "malinik_db.db",
-            "bot_token": token,
-            "allowed_chat_ids": [int(chat_id.strip()) for chat_id in chat_ids.split(",") if chat_id.strip()]
-        }
-        with open(CONFIG_FILE, "w") as f:
-            json.dump(config, f, indent=2)
-        print(f"Konfigurace byla úspěšně uložena uložena do {CONFIG_FILE}")
-        return config
-
-config = load_or_create_config()
+config = config.load_or_create_config() # volani funkce z config.py
 
 DB_PATH = config["db_path"]
 TOKEN = config["bot_token"]
 ALLOWED_CHAT_IDS = set(config["allowed_chat_ids"])
 
-# INICIALIZACE DATABAZE
-# -----------------------------
+configure(DB_PATH) #volani funkce z db_utils
 
-# zalozi novou tabulku v databazi
-# radek je id chat_id text_pripominky cas_vytvoreni
-async def init_db():
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("""
-        CREATE TABLE IF NOT EXISTS reminders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            chat_id INTEGER,
-            text TEXT NOT NULL,
-            created_at TEXT NOT NULL
-        );
-        """)
-        await db.commit()
-
-# vlozi do databaze novy radek
-async def add_reminder(chat_id: int, text: str):
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
-            "INSERT INTO reminders (chat_id, text, created_at) VALUES (?, ?, ?)",
-            (chat_id, text, datetime.utcnow().isoformat())
-        )
-        await db.commit()
-    await send_to_display_and_update()
-
-# vrati list zaznamu od chat_id
-async def list_reminders_for(chat_id: int) -> List[dict]:
-    async with aiosqlite.connect(DB_PATH) as db:
-        cur = await db.execute(
-            "SELECT id, text, created_at FROM reminders WHERE chat_id = ? ORDER BY id DESC",
-            (chat_id,)
-        )
-        rows = await cur.fetchall()
-    return [{"id": r[0], "text": r[1], "created_at": r[2]} for r in rows]
-
-# vrati vsechny zaznamy
-async def list_all_reminders() -> List[dict]:
-    async with aiosqlite.connect(DB_PATH) as db:
-        cur = await db.execute(
-            "SELECT id, chat_id, text, created_at FROM reminders ORDER BY id DESC",
-        )
-        rows = await cur.fetchall()
-    return [{"id": r[0], "chat_id": r[1], "text": r[2], "created_at": r[3]} for r in rows]
-
-# smaze zaznam
-async def remove_reminder(rid: int) -> bool:
-    async with aiosqlite.connect(DB_PATH) as db:
-        cur = await db.execute(
-            "DELETE FROM reminders WHERE id = ?",
-            (rid,)
-        )
-        await db.commit()
-        deleted = cur.rowcount
-    if deleted:
-        await send_to_display_and_update()
-    return bool(deleted)
-
-# OVLADANI DISPLAY
-# ma ho na starost vedlejsi soubor display_code.py, ktery je nahore naimportovany, tady se jen predaji informace a zavola tamni funce
-# -------------------------
-async def send_to_display_and_update():
-    async with aiosqlite.connect(DB_PATH) as db:
-            cur = await db.execute("SELECT id, text FROM reminders ORDER BY id DESC LIMIT 10")
-            rows = await cur.fetchall()
-            summary = "\n".join(f"{r[0]}: {r[1]}" for r in rows)
-    await display_code.update_display(summary)
-
-
-
-# HANDELRY
+# BOT HANDELRY
 # -------------------------
 
 # aby se neuselo vzdy kontrolova, jestli je to spravne chat_id, mam na to tady funckci, ktera v pripade neuspechu nepusti dal
@@ -191,9 +102,9 @@ async def remove_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except ValueError:
         await update.message.reply_text("ID musí být číslo.")
         return
-    ok = await remove_reminder(rid)
+    ok, text = await remove_reminder(rid)
     if ok:
-        await update.message.reply_text(f"Smazáno: {rid}")
+        await update.message.reply_text(f"Smazáno: {rid}- {text}")
     else:
         await update.message.reply_text("Položka s tímto ID neexistuje.")
 
