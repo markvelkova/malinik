@@ -95,6 +95,7 @@ async def listmy_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 @allowed_only
 async def remove_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
+        await list_cmd(update, context)
         await update.message.reply_text("Použití: /remove <id připomínky (číslo)>")
         return
     try:
