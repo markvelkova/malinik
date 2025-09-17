@@ -2,13 +2,13 @@
 Jednoduchá aplikace umožňující přes Telegram bota interagovat s SQLite databází a zobrazuje aktuální stav databáze.
 
 **MOMENTÁLNĚ JEN VYPISUJE PŘÍMO NA STROJI BĚHU OBSAH, KTERÝ POTOM PŘIJDE NA KONKRÉTNÍ DISPLAY**
-## Před spuštěním
+## Před prvním spuštěním
 ### Na RaspberryPi (případně jiném místě běhu programu)
 Předpokládá se spouštění na RaspberryPi, tedy následující pokyny jsou uplatnitelné pouze na Linuxu
 ```
 git clone https://github.com/markvelkova/malinik.git
 ```
-- stáhne odtud potřebné soubory do samostatné složky
+- stáhne odtud potřebné soubory do samostatné složky `malinik`
 ```
 sudo apt update && sudo apt install -y python3-venv python3-pip
 python3 -m venv venv
@@ -27,7 +27,7 @@ chmod +x <cesta k souboru bot_code.py>
 - příkazem `/newbot` vyrobit nového bota (BotFather vás provede procesem)
 - zkopírovat si bot TOKEN pro pozdější použití
 ## Spuštění
-Pokud není aktivované vitruální prosřtedí, pak ho výše uvedeným příkazem aktivujte, pak je možno spustit program
+Pokud není aktivované vitruální prostředí, pak ho výše uvedeným příkazem `source venv/bin/activate` aktivujte (pokud je prostředí aktivováno, zobrazuje se na začátku promptu (venv), pak je možno spustit program
 ```
 ./bot_code.py
 ```
