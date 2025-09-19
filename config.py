@@ -12,12 +12,12 @@ def load_or_create_config():
             return json.load(f)
     else:
         print("Vítej v Maliníku, je třeba vše nastavit, aby to fungovalo, jak bylo přislíbeno...\n Následující údaje můžete kdykoli upravit ručně v souboru config.json\n Pokud už jste tyto údaje někdy nastavovali a teď to nefunguje, zkontrolujte, zda soubor {CONFIG_FILE} existuje a je na správném místě")
-        print("POVINNNÉ ÚDAJE:\n")
+        print("\nPOVINNNÉ ÚDAJE pro všechny způsoby komunikace:")
         db_path = input("Zadej cestu k databázi (např. databaze.db): ").strip()
-        print("ÚDAJE POTŘEBNÉ PRO TELEGRAM BOTA (pokud používáte jiný způsob, můžete ponechat prázdné):")
+        print("\nÚDAJE POTŘEBNÉ PRO TELEGRAM BOTA (pokud používáte jiný způsob, můžete ponechat prázdné):")
         token = input("Zadej Telegram bot token (získáš při tvorbě bota): ").strip()
         chat_ids = input("Zadej povolená chat_id oddělené čárkou (získáš od bota zavoláním příkazu /id, je možno doplnit ručně později):\n").strip()
-        print("ÚDAJE POTŘEBNÉ PRO KOMUNIKACI PŘES MOSQUITTO\n")
+        print("\nÚDAJE POTŘEBNÉ PRO KOMUNIKACI PŘES MOSQUITTO")
         topic = input("Zadej topic, na kterém bude program poslouchat: ").strip()
         config = {
             "db_path": db_path or "malinik_db.db",
