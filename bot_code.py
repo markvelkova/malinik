@@ -121,6 +121,16 @@ async def text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # SPUŠTĚNÍ
 # -------------------------
 
+# registrace příkazů
+def registrate_commands(app):
+    app.add_handler(CommandHandler("start", start_cmd))
+    app.add_handler(CommandHandler("id", id_cmd))
+    app.add_handler(CommandHandler("add", add_cmd))
+    app.add_handler(CommandHandler("list", list_cmd))
+    app.add_handler(CommandHandler("listmy", listmy_cmd))
+    app.add_handler(CommandHandler("remove", remove_cmd))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_message))
+
 async def post_init(application):
     await application.bot.set_my_commands([
         BotCommand("start", "Úvod a nápověda"),
@@ -134,16 +144,7 @@ async def post_init(application):
 def main():
     asyncio.run(init_db())
     app = ApplicationBuilder().token(TOKEN).post_init(post_init).build()
-
-    # registrace příkazů
-    app.add_handler(CommandHandler("start", start_cmd))
-    app.add_handler(CommandHandler("id", id_cmd))
-    app.add_handler(CommandHandler("add", add_cmd))
-    app.add_handler(CommandHandler("list", list_cmd))
-    app.add_handler(CommandHandler("listmy", listmy_cmd))
-    app.add_handler(CommandHandler("remove", remove_cmd))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_message))
-
+    registrate_commands(app)
     print("MaliníkBot spuštěn, čeká na zprávy...")
     app.run_polling()
 
