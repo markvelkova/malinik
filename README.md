@@ -4,9 +4,12 @@ Jednoduchá aplikace umožňující přes Telegram bota interagovat s SQLite dat
 **MOMENTÁLNĚ JEN VYPISUJE PŘÍMO NA STROJI BĚHU OBSAH, KTERÝ POTOM PŘIJDE NA KONKRÉTNÍ DISPLAY**
 
 **pozor: blíží se změny v komunikaci**
-- zachován zatím kvůli zpětné kompatibilitě bot_code.py, ale nebude tam věčně
-- doporučujeme začít spouštět přes main.py (pokud se spustí bez parametru, nepoznáte změnu, s parametrem `cli` spustí terminálovou verzi)
-- v plánu je přidat komunikaci přes webovou aplikaci, v configu přibyl jeden řádek - doporučujeme smazat soubor `config.json` a nebo ho předělat podle aktualního `config.example.json` 
+- zachován zatím kvůli zpětné kompatibilitě bot_code.py, **vše se zatím dá rozjet podle návodu dole** následující odrážky je tedy možno přeskočit, slouží pro informaci, co očekávat v příštích dnech (snad) 
+
+
+- v plánu je přidat komunikaci přes webovou aplikaci a cli, v configu přibyl jeden řádek pro tento budoucí účel - doporučujeme smazat soubor `config.json` a nebo ho předělat podle aktualního `config.example.json` (tedy přidat tu jednu kategorii) 
+- vývoj probíhá na větvi dev, tady proběhly jen malé změny a je možno bez obav klonovat main
+- informace o větší aktualizaci v main větvi se objeví tady společně s aktualizovaným návodem
 
 # Pro admina
 Adminem je míněna osoba, která spravuje a nastavuje stroj, na němž program běží (například Raspberry Pi). Dále je návod, jak nastavit vše potřebné, a co budou potřebovat uživatelé.
