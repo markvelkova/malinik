@@ -1,4 +1,3 @@
-# telegram_bot.py
 import asyncio
 from telegram import Update, BotCommand
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters

@@ -81,7 +81,7 @@ class DatabaseTable:
 
     async def get_whole_database(self):
         """vratí všechny řádky a sloupce databáze"""
-        async with await self._connect() as db:
+        async with aiosqlite.connect(self.DB_PATH) as db:
             cur = await db.execute("SELECT * FROM reminders")
             rows = await cur.fetchall()
         return rows

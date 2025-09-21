@@ -6,10 +6,10 @@ from datetime import datetime
 import db_utils
 
 class Display(ABC):
-    @abstractmethod
     def __init__(self, database):
         self.database = database        
         self.time = datetime.now() 
+    @abstractmethod
     async def update(self):
         pass
 
@@ -17,7 +17,7 @@ class Display(ABC):
 class TerminalDisplay(Display):
     async def update(self):
         self.time = datetime.now()
-        display_to_terminal(self.database.get_whole_database())
+        display_to_terminal(await self.database.get_whole_database(), self.time)
     
 
 
@@ -27,7 +27,8 @@ class GraphicDisplay(Display):
 
 # ddstane radky primo z databaze
 
-def display_to_terminal(data):
+def display_to_terminal(data, time):
+    print(time)
     def get_fill_spaces(total_len, content, padding):
         return " " * (total_len + padding - len(str(content)))
     

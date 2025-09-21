@@ -31,6 +31,6 @@ class TerminalBot:
             else:
                 print("Neznámý příkaz. Použij 'help'.")
 
-def main(db_table):
+async def main(db_table):
     bot = TerminalBot(db_table)
-    asyncio.run(bot.start_in_loop())
+    await bot.start_in_loop()
