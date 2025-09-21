@@ -3,114 +3,98 @@ from datetime import datetime, timezone
 from typing import List, Tuple, Optional
 from display_code import update_display
 
-DB_PATH: str | None = None
+class DatabaseTable:
+    def __init__(self, db_path: str):
+        """nastaví cestu k DB pro všechny funkce"""
+        if not db_path:
+            raise ValueError("db_path musí být zadán")
+        self.DB_PATH = db_path
 
-def configure(db_path: str):
-    """nastaví cestu k DB pro všechny funkce"""
-    global DB_PATH
-    DB_PATH = db_path
+    async def _connect(self):
+        return await aiosqlite.connect(self.DB_PATH)
 
-def db_required(func):
-    """dekorátor pro asynchronní funkce, které potřebují DB_PATH."""
-    async def wrapper(*args, **kwargs):
-        if not DB_PATH:
-            raise RuntimeError("DB_PATH není nastaveno. Je nutno zavolat configure().")
-        return await func(*args, **kwargs)
-    return wrapper
+    # INICIALIZACE DATABAZE
+    # -----------------------------
 
+    async def init_db(self):
+        """zalozi novou tabulku v databazi, radek je id chat_id text_pripominky cas_vytvoreni"""
+        async with await self._connect() as db:
+            await db.execute("""
+            CREATE TABLE IF NOT EXISTS reminders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                chat_id INTEGER,
+                text TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            """)
+            await db.commit()
 
-# INICIALIZACE DATABAZE
-# -----------------------------
+    async def add_reminder(self, chat_id: int, text: str):
+        """vlozi do databaze novy radek"""
+        async with await self._connect() as db:
+            await db.execute(
+                "INSERT INTO reminders (chat_id, text, created_at) VALUES (?, ?, ?)",
+                (chat_id, text, datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S'))
+            )
+            await db.commit()
+        await self.send_to_display_and_update()
 
-@db_required
-async def init_db():
-    """zalozi novou tabulku v databazi, radek je id chat_id text_pripominky cas_vytvoreni"""
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("""
-        CREATE TABLE IF NOT EXISTS reminders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            chat_id INTEGER,
-            text TEXT NOT NULL,
-            created_at TEXT NOT NULL
-        );
-        """)
-        await db.commit()
-
-@db_required
-async def add_reminder(chat_id: int, text: str):
-    """vlozi do databaze novy radek"""
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
-            "INSERT INTO reminders (chat_id, text, created_at) VALUES (?, ?, ?)",
-            (chat_id, text, datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S'))
-        )
-        await db.commit()
-    await send_to_display_and_update()
-
-@db_required
-async def list_reminders_for(chat_id: int) -> List[dict]:
-    """vrati list zaznamu od chat_id"""
-    if not DB_PATH:
-        raise RuntimeError("DB_PATH není nastaveno. Zavolejte configure() nejdříve.")
-    async with aiosqlite.connect(DB_PATH) as db:
-        cur = await db.execute(
-            "SELECT id, text, created_at FROM reminders WHERE chat_id = ? ORDER BY id DESC",
-            (chat_id,)
-        )
-        rows = await cur.fetchall()
-    return [{"id": r[0], "text": r[1], "created_at": r[2]} for r in rows]
-
-@db_required
-async def list_all_reminders() -> List[dict]:
-    """vrati vsechny zaznamy"""
-    async with aiosqlite.connect(DB_PATH) as db:
-        cur = await db.execute(
-            "SELECT id, chat_id, text, created_at FROM reminders ORDER BY id DESC",
-        )
-        rows = await cur.fetchall()
-    return [{"id": r[0], "chat_id": r[1], "text": r[2], "created_at": r[3]} for r in rows]
-
-
-@db_required
-async def remove_reminder(rid: int) -> tuple[bool, str | None]:
-    """smaze radek, a vrati text, ktery e smazal"""
-    async with aiosqlite.connect(DB_PATH) as db:
-        # vytahneme text pred smazanim
-        cur = await db.execute(
-            "SELECT text FROM reminders WHERE id = ?",
-            (rid,)
-        )
-        row = await cur.fetchone()
-        deleted_text = row[0] if row else None
-
-        # smazeme
-        cur = await db.execute(
-            "DELETE FROM reminders WHERE id = ?",
-            (rid,)
-        )
-        await db.commit()
-        deleted = cur.rowcount
-
-    if deleted:
-        await send_to_display_and_update()
-
-    return bool(deleted), deleted_text
-
-
-# OVLADANI DISPLAY
-# ma ho na starost vedlejsi soubor display_code.py, ktery je nahore naimportovany, tady se jen predaji informace a zavola tamni funce
-@db_required
-async def send_to_display_and_update():
-    """predani informaci a volani displaye, ktery je nahore importovany"""
-    async with aiosqlite.connect(DB_PATH) as db:
-            cur = await db.execute("SELECT id, text, created_at FROM reminders ORDER BY id DESC LIMIT 10")
+    async def list_reminders_for(self, chat_id: int) -> List[dict]:
+        """vrati list zaznamu od chat_id"""
+        async with await self._connect() as db:
+            cur = await db.execute(
+                "SELECT id, text, created_at FROM reminders WHERE chat_id = ? ORDER BY id DESC",
+                (chat_id,)
+            )
             rows = await cur.fetchall()
-            #summary = "\n".join(f"{r[0]}: {r[1]}, {r[2]}" for r in rows)
-    await update_display(rows)
+        return [{"id": r[0], "text": r[1], "created_at": r[2]} for r in rows]
 
-async def get_whole_database():
-    """vratí všechny řádky a sloupce databáze"""
-    async with aiosqlite.connect(DB_PATH) as db:
-        cur = await db.execute("SELECT * FROM reminders")
-        rows = await cur.fetchall()
-    await update_display(rows)
+    async def list_all_reminders(self) -> List[dict]:
+        """vrati vsechny zaznamy"""
+        async with await self._connect() as db:
+            cur = await db.execute(
+                "SELECT id, chat_id, text, created_at FROM reminders ORDER BY id DESC",
+            )
+            rows = await cur.fetchall()
+        return [{"id": r[0], "chat_id": r[1], "text": r[2], "created_at": r[3]} for r in rows]
+
+    async def remove_reminder(self, rid: int) -> tuple[bool, Optional[str]]:
+        """smaze radek, a vrati text, ktery e smazal"""
+        async with await self._connect() as db:
+            # vytahneme text pred smazanim
+            cur = await db.execute(
+                "SELECT text FROM reminders WHERE id = ?",
+                (rid,)
+            )
+            row = await cur.fetchone()
+            deleted_text = row[0] if row else None
+
+            # smazeme
+            cur = await db.execute(
+                "DELETE FROM reminders WHERE id = ?",
+                (rid,)
+            )
+            await db.commit()
+            deleted = cur.rowcount
+
+        if deleted:
+            await self.send_to_display_and_update()
+
+        return bool(deleted), deleted_text
+
+    # OVLADANI DISPLAY
+    # ma ho na starost vedlejsi soubor display_code.py, ktery je nahore importovany, tady se jen predaji informace a zavola tamni funce
+    async def send_to_display_and_update(self):
+        """predani informaci a volani displaye, ktery je nahore importovany"""
+        async with await self._connect() as db:
+                cur = await db.execute("SELECT id, text, created_at FROM reminders ORDER BY id DESC LIMIT 10")
+                rows = await cur.fetchall()
+                #summary = "\n".join(f"{r[0]}: {r[1]}, {r[2]}" for r in rows)
+        await update_display(rows)
+
+    async def get_whole_database(self):
+        """vratí všechny řádky a sloupce databáze"""
+        async with await self._connect() as db:
+            cur = await db.execute("SELECT * FROM reminders")
+            rows = await cur.fetchall()
+        await update_display(rows)

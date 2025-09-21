@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 from config import load_or_create_config
+from db_utils import DatabaseTable
 
 config = load_or_create_config()
 DB_PATH = config["db_path"]
@@ -17,13 +18,14 @@ def acknowledge_wrong_parameter():
             "pak použijte ./main.py parametr")
 
 def main():
+    db_table = DatabaseTable(DB_PATH)
     if len(sys.argv) > 1:
         if sys.argv[1] == "cli":
             import cli_control_code
-            cli_control_code.main(DB_PATH)
+            cli_control_code.main(db_table)
         elif sys.argv[1] == "tele":
             import telegram_bot_code
-            telegram_bot_code.main(DB_PATH, TOKEN, ALLOWED_CHAT_IDS)
+            telegram_bot_code.main(db_table, TOKEN, ALLOWED_CHAT_IDS)
         else:
             acknowledge_wrong_parameter()
     else:
