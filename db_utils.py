@@ -107,3 +107,10 @@ async def send_to_display_and_update():
             rows = await cur.fetchall()
             #summary = "\n".join(f"{r[0]}: {r[1]}, {r[2]}" for r in rows)
     await update_display(rows)
+
+async def get_whole_database():
+    """vratí všechny řádky a sloupce databáze"""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cur = await db.execute("SELECT * FROM reminders")
+        rows = await cur.fetchall()
+    await update_display(rows)
