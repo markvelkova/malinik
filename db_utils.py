@@ -1,10 +1,6 @@
 import aiosqlite
 from datetime import datetime, timezone
 from typing import List, Tuple, Optional
-# from display_code import update_display
-import aiosqlite
-from datetime import datetime, timezone
-from typing import List, Optional
 
 class DatabaseTable:
     def __init__(self, db_path: str):
@@ -36,7 +32,7 @@ class DatabaseTable:
                 (chat_id, text, datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S'))
             )
             await db.commit()
-        await self.send_to_display_and_update()
+        #TODO: logger
 
     async def list_reminders_for(self, chat_id: int) -> List[dict]:
         """vrati list zaznamu od chat_id"""
@@ -77,7 +73,8 @@ class DatabaseTable:
             deleted = cur.rowcount
 
         if deleted:
-            await self.send_to_display_and_update()
+            #TODO: logger
+            pass
 
         return bool(deleted), deleted_text
 
@@ -88,8 +85,3 @@ class DatabaseTable:
             cur = await db.execute("SELECT * FROM reminders")
             rows = await cur.fetchall()
         return rows
-    
-    
-
-    async def send_to_display_and_update(self):
-        pass
