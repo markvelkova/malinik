@@ -3,16 +3,15 @@ import asyncio
 from telegram import Update, BotCommand
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
 
-from db_utils import configure, init_db
+from db_utils import DatabaseTable
 from commands import add_reminder_cmd, list_all_cmd, list_my_cmd, remove_cmd
 
 # nakonec bude trida telegramBOt
 class TelegramBot:
-    def __init__(self, DB_PATH, TOKEN, ALLOWED_CHAT_IDS):
-        self.DB_PATH = DB_PATH
+    def __init__(self, db_table, TOKEN, ALLOWED_CHAT_IDS):
         self.TOKEN = TOKEN
         self.ALLOWED_CHAT_IDS = ALLOWED_CHAT_IDS
-        configure(DB_PATH) # pripoji se k databazi, pripadne si ji zajisti
+        self.DB_TABLE = db_table
 
     # aby se neuselo vzdy kontrolova, jestli je to spravne chat_id, mam na to tady funckci, ktera v pripade neuspechu nepusti dal
     # funkce pod @allowed_only se povedou jako delegaty touto funkci
@@ -52,21 +51,21 @@ class TelegramBot:
             if not text:
                 await update.message.reply_text("Použití: /add <text připomínky>")
                 return
-            await update.message.reply_text(await add_reminder_cmd(update.effective_chat.id, text))
+            await update.message.reply_text(await add_reminder_cmd(self.DB_TABLE, update.effective_chat.id, text))
         return handler
 
     # /list - vypíše uživateli do chatu všechny připomínky v databázi
     def list_cmd(self):
         @self.allowed_only
         async def handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-            await update.message.reply_text(await list_all_cmd())
+            await update.message.reply_text(await list_all_cmd(self.DB_TABLE))
         return handler
 
     # /listmy - vypíše uživateli všechny jím přidané připomínky v databázi - mohlo by se hodit
     def listmy_cmd(self):
         @self.allowed_only
         async def handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-            await update.message.reply_text(await list_my_cmd(update.effective_chat.id))
+            await update.message.reply_text(await list_my_cmd(self.DB_TABLE, update.effective_chat.id))
         return handler
 
     # /remove id - odstraní přiomínku ddaného id
@@ -81,7 +80,7 @@ class TelegramBot:
             except ValueError:
                 await update.message.reply_text("ID musí být číslo.")
                 return
-            await update.message.reply_text(await remove_cmd(rid))
+            await update.message.reply_text(await remove_cmd(self.DB_TABLE, rid))
         return handler
 
     # spiš pro debug, cokoli, co neni prikaz (nezacina lomitkem) se prida jako zaznam, kdyby se to tim nejak moc zaplevelovalo, vypnu tu funkci
@@ -91,7 +90,7 @@ class TelegramBot:
             txt = update.message.text.strip()
             if txt.startswith("/"):
                 return
-            await update.message.reply_text(await add_reminder_cmd(update.effective_chat.id, txt))
+            await update.message.reply_text(await add_reminder_cmd(self.DB_TABLE, update.effective_chat.id, txt))
         return handler
 
     # -------------------------
@@ -118,14 +117,13 @@ class TelegramBot:
 
     # spuštění bota
     def start_bot(self):
-        asyncio.run(init_db())
         app = ApplicationBuilder().token(self.TOKEN).post_init(self.post_init).build()
         self.registrate_commands(app)
         print("Telegram MaliníkBot spuštěn, čeká na zprávy...")
         app.run_polling()
 
 # -------------------------
-def main(DB_PATH, TOKEN, ALLOWED_CHAT_IDS):
-    bot = TelegramBot(DB_PATH, TOKEN, ALLOWED_CHAT_IDS)
+def main(db_table, TOKEN, ALLOWED_CHAT_IDS):
+    bot = TelegramBot(db_table, TOKEN, ALLOWED_CHAT_IDS)
     bot.start_bot()
 
